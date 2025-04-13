@@ -1,0 +1,286 @@
+/* Journal Image Styles */
+.journal-image-container {
+    position: relative;
+    margin: 15px 0;
+    max-width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding-bottom: 10px;
+}
+
+.journal-image-preview {
+    display: block;
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 8px 8px 0 0;
+    margin: 0 auto; /* Center the preview */
+}
+
+.journal-image-remove {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.journal-image-remove:hover {
+    background-color: rgba(255, 0, 0, 0.6);
+    transform: scale(1.1);
+}
+
+/* Image position and size controls */
+.image-controls {
+    padding: 10px 15px;
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+}
+
+.image-position-controls,
+.image-size-controls {
+    margin-bottom: 10px;
+}
+
+.image-position-controls h4,
+.image-size-controls h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.position-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.position-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.position-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    color: var(--accent);
+}
+
+.position-btn.active {
+    background-color: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.size-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.size-slider {
+    flex: 1;
+    height: 5px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border-color);
+    outline: none;
+    border-radius: 10px;
+}
+
+.size-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.size-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.size-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.size-slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+}
+
+#size-value {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    min-width: 40px;
+    text-align: right;
+}
+
+/* Journal entry image display styles for different positions */
+.journal-entry-image {
+    margin: 10px 0;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    /* Remove max-width here - size will be controlled by inline style */
+}
+
+.journal-entry-image:hover {
+    transform: scale(1.01);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Different image positioning styles */
+.journal-entry-image-above {
+    margin-bottom: 15px;
+    display: block;
+    clear: both;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.journal-entry-image-below {
+    margin-top: 15px;
+    display: block;
+    clear: both;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.journal-entry-image-left {
+    float: left;
+    margin-right: 15px;
+    margin-bottom: 10px;
+    /* Don't add max-width constraints here - keep user's setting */
+}
+
+.journal-entry-image-right {
+    float: right;
+    margin-left: 15px;
+    margin-bottom: 10px;
+    /* Don't add max-width constraints here - keep user's setting */
+}
+
+.journal-entry-image-inline {
+    display: block;
+    margin: 15px auto;
+    clear: both;
+}
+
+/* Image Modal for full-size view */
+.image-modal {
+    display: flex;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    align-items: center;
+    justify-content: center;
+}
+
+.image-modal-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+}
+
+.image-modal-content img {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.close-modal {
+    position: absolute;
+    top: -30px;
+    right: 0;
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Content wrapper for text-image layout - important for floating images */
+.journal-content-wrapper {
+    overflow: hidden; /* For clearfix with floated images */
+    margin-bottom: 15px;
+    position: relative;
+    width: 100%;
+    display: block;
+}
+
+/* Make sure the content doesn't overflow when images are floated */
+.journal-content-wrapper .journal-content {
+    overflow: auto;
+    word-wrap: break-word;
+}
+
+/* Journal content inside entries needs proper margin when next to images */
+.journal-entry .journal-content {
+    margin-bottom: 10px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Responsive adjustments for images */
+@media (max-width: 768px) {
+    .journal-entry-image {
+        max-height: 200px;
+    }
+    
+    .journal-entry-image-left,
+    .journal-entry-image-right {
+        float: none;
+        margin: 15px 0;
+        width: 100% !important;
+    }
+    
+    .position-options {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .journal-entry-image {
+        max-height: 150px;
+    }
+    
+    .position-btn {
+        width: 32px;
+        height: 32px;
+    }
+}
