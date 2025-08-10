@@ -593,11 +593,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const passwordHint = document.getElementById('password-hint');
         const journalSearch = document.getElementById('journal-search');
         const journalFilter = document.getElementById('journal-filter');
+        // Subnav tabs
+        const tabDashboard = document.getElementById('journal-tab-dashboard');
+        const tabActivity = document.getElementById('journal-tab-activity');
+        const activityView = document.getElementById('journal-activity-view');
+        const foldersChipList = document.getElementById('folders-chip-list');
+        const addFolderBtn = document.getElementById('add-folder-btn');
         const viewAllBtn = document.getElementById('journal-view-all');
         const viewCalendarBtn = document.getElementById('journal-view-calendar');
         const calendarView = document.getElementById('journal-calendar-view');
         const journalEntriesContainer = document.getElementById('journal-entries');
-        const journalMoods = document.querySelectorAll('.journal-mood');
+        const journalMoods = document.querySelectorAll('.mood-btn');
         const journalTools = {
             addDate: document.getElementById('journal-add-date'),
             addTime: document.getElementById('journal-add-time'),
@@ -618,6 +624,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const passwordStrengthText = document.getElementById('password-strength-text');
         
         let selectedMood = null;
+        // Journal folders state
+        state.journalFolders = JSON.parse(localStorage.getItem('journalFolders')) || [];
+        state.currentFolderFilter = localStorage.getItem('journalFolderFilter') || 'all';
         
         // Check if journal is password protected
         const isProtected = localStorage.getItem('journal-protected') === 'true';
@@ -774,14 +783,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
   
         // Mood selection
-        journalMoods.forEach(mood => {
-            mood.addEventListener('click', () => {
-                // Remove selected class from all moods
-                journalMoods.forEach(m => m.classList.remove('selected'));
+        journalMoods.forEach(moodButton => {
+            moodButton.addEventListener('click', () => {
+                // Remove active class from all moods
+                journalMoods.forEach(btn => btn.classList.remove('active'));
                 
-                // Add selected class to clicked mood
-                mood.classList.add('selected');
-                selectedMood = mood.dataset.mood;
+                // Add active class to clicked mood
+                moodButton.classList.add('active');
+                selectedMood = moodButton.dataset.mood;
             });
         });
         
@@ -1324,7 +1333,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         text: entryText,
                         date: new Date().toISOString(),
                         mood: selectedMood,
-                        metadata: finalMetadata
+                        metadata: finalMetadata,
+                        folderId: state.currentFolderFilter !== 'all' ? state.currentFolderFilter : ''
                     };
                     
                     // Try to save to storage with error handling
@@ -1385,8 +1395,8 @@ document.addEventListener('DOMContentLoaded', () => {
             journalMetadata = { weather: '', location: '', image: '' };
             
             // Reset mood selection
-            document.querySelectorAll('.journal-mood').forEach(el => {
-                el.classList.remove('selected');
+            document.querySelectorAll('.mood-btn').forEach(el => {
+                el.classList.remove('active');
             });
             
             // Reset metadata displays
@@ -1428,6 +1438,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Render entries
             renderJournalEntries();
+            renderFoldersChips();
             
             // Update stats
             updateStats();
@@ -1461,7 +1472,112 @@ document.addEventListener('DOMContentLoaded', () => {
             filterJournalEntries(searchTerm, journalFilter.value);
         });
         
+        // Folders UI
+        function renderFoldersChips() {
+            if (!foldersChipList) return;
+            foldersChipList.innerHTML = '';
+            // Always include All chip
+            const allChip = document.createElement('div');
+            allChip.className = `folder-chip ${state.currentFolderFilter === 'all' ? 'active' : ''}`;
+            allChip.innerHTML = `<i class="fas fa-folder-open"></i> <span>All</span>`;
+            allChip.addEventListener('click', () => {
+                state.currentFolderFilter = 'all';
+                localStorage.setItem('journalFolderFilter', 'all');
+                renderFoldersChips();
+                renderJournalEntries();
+            });
+            foldersChipList.appendChild(allChip);
+
+            // User folders
+            state.journalFolders.forEach(folder => {
+                const chip = document.createElement('div');
+                chip.className = `folder-chip ${state.currentFolderFilter === String(folder.id) ? 'active' : ''}`;
+                chip.innerHTML = `
+                    <i class="fas fa-folder"></i> 
+                    <span class="chip-name">${folder.name}</span>
+                    <span class="chip-actions">
+                        <button class="rename" title="Rename"><i class="fas fa-pen"></i></button>
+                        <button class="delete" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                    </span>`;
+                chip.addEventListener('click', (e) => {
+                    // Ignore clicks on action buttons
+                    if ((e.target.closest && e.target.closest('.rename')) || (e.target.closest && e.target.closest('.delete'))) return;
+                    state.currentFolderFilter = String(folder.id);
+                    localStorage.setItem('journalFolderFilter', state.currentFolderFilter);
+                    renderFoldersChips();
+                    renderJournalEntries();
+                });
+                chip.querySelector('.rename').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const newName = prompt('Rename folder', folder.name);
+                    if (newName && newName.trim()) {
+                        folder.name = newName.trim();
+                        persistFolders();
+                        renderFoldersChips();
+                        renderJournalEntries();
+                    }
+                });
+                chip.querySelector('.delete').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (!confirm('Delete this folder? Entries will not be deleted.')) return;
+                    // Remove folder
+                    state.journalFolders = state.journalFolders.filter(f => f.id !== folder.id);
+                    // Unassign entries from this folder
+                    const entries = JSON.parse(localStorage.getItem('journalEntries') || '[]').map(en => ({
+                        ...en,
+                        folderId: en.folderId === String(folder.id) || en.folderId === folder.id ? '' : en.folderId
+                    }));
+                    localStorage.setItem('journalEntries', JSON.stringify(entries));
+                    if (state.currentFolderFilter === String(folder.id)) {
+                        state.currentFolderFilter = 'all';
+                        localStorage.setItem('journalFolderFilter', 'all');
+                    }
+                    persistFolders();
+                    renderFoldersChips();
+                    renderJournalEntries();
+                });
+                foldersChipList.appendChild(chip);
+            });
+        }
+
+        function persistFolders() {
+            localStorage.setItem('journalFolders', JSON.stringify(state.journalFolders));
+        }
+
+        if (addFolderBtn) {
+            addFolderBtn.addEventListener('click', () => {
+                const name = prompt('New folder name');
+                if (!name || !name.trim()) return;
+                const folder = { id: Date.now(), name: name.trim(), createdAt: new Date().toISOString() };
+                state.journalFolders.push(folder);
+                persistFolders();
+                renderFoldersChips();
+            });
+        }
+
+        // Tabs switching
+        function activateDashboard() {
+            tabDashboard.classList.add('active');
+            tabActivity.classList.remove('active');
+            activityView.style.display = 'none';
+            journalEntriesContainer.style.display = (document.getElementById('journal-view-all').classList.contains('active')) ? 'block' : 'none';
+            calendarView.style.display = (document.getElementById('journal-view-calendar').classList.contains('active')) ? 'block' : 'none';
+        }
+        function activateActivity() {
+            tabActivity.classList.add('active');
+            tabDashboard.classList.remove('active');
+            activityView.style.display = 'block';
+            journalEntriesContainer.style.display = 'none';
+            calendarView.style.display = 'none';
+            renderJournalActivity();
+        }
+        if (tabDashboard && tabActivity) {
+            tabDashboard.addEventListener('click', activateDashboard);
+            tabActivity.addEventListener('click', activateActivity);
+        }
+
         // Initial render
+        renderFoldersChips();
         renderJournalEntries();
     }
   
@@ -1469,6 +1585,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const entriesContainer = document.getElementById('journal-entries');
         const entries = JSON.parse(localStorage.getItem('journalEntries') || '[]');
         const filterValue = document.getElementById('journal-filter').value;
+        const folderFilter = state.currentFolderFilter || 'all';
         
         // Filter entries based on selected filter
         let filteredEntries = entries;
@@ -1506,7 +1623,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Render entries
         entriesContainer.innerHTML = '';
         
-        filteredEntries.forEach(entry => {
+        // Folder filtering
+        const folderFiltered = folderFilter === 'all' ? filteredEntries : filteredEntries.filter(e => String(e.folderId || '') === String(folderFilter));
+
+        folderFiltered.forEach(entry => {
             const entryDate = new Date(entry.date);
             const formattedDate = entryDate.toLocaleDateString('en-US', {
                 weekday: 'long',
@@ -1670,6 +1790,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="delete-btn" data-id="${entry.id}">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
+                            <select class="entry-folder-select" data-id="${entry.id}">
+                                <option value="">No folder</option>
+                                ${state.journalFolders.map(f => `<option value="${f.id}" ${String(entry.folderId || '') === String(f.id) ? 'selected' : ''}>${f.name}</option>`).join('')}
+                            </select>
                         </div>
                     </div>
                     ${metadataHTML}
@@ -1713,6 +1837,84 @@ document.addEventListener('DOMContentLoaded', () => {
                 editJournalEntry(entryId);
             });
         });
+        // Folder change per entry
+        document.querySelectorAll('.entry-folder-select').forEach(sel => {
+            sel.addEventListener('change', (e) => {
+                const entryId = parseInt(e.target.getAttribute('data-id'));
+                const targetFolderId = e.target.value;
+                const all = JSON.parse(localStorage.getItem('journalEntries') || '[]');
+                const idx = all.findIndex(en => en.id === entryId);
+                if (idx !== -1) {
+                    all[idx].folderId = targetFolderId;
+                    localStorage.setItem('journalEntries', JSON.stringify(all));
+                    renderJournalEntries();
+                    renderFoldersChips();
+                }
+            });
+        });
+    }
+
+    // Journal Activity charts
+    function renderJournalActivity() {
+        // Prepare data
+        const entries = JSON.parse(localStorage.getItem('journalEntries') || '[]');
+        // Entries per day (last 14 days)
+        const days = [];
+        const counts = [];
+        const now = new Date();
+        for (let i = 13; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(now.getDate() - i);
+            const key = d.toISOString().slice(0, 10);
+            days.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+            counts.push(entries.filter(e => (e.date || '').slice(0, 10) === key).length);
+        }
+        const ctx1 = document.getElementById('journal-entries-per-day');
+        if (ctx1) {
+            if (window.journalEntriesPerDayChart) window.journalEntriesPerDayChart.destroy();
+            window.journalEntriesPerDayChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'Entries',
+                        data: counts,
+                        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#646cff',
+                        tension: 0.3,
+                        fill: false
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // Entries by folder (pie)
+        const byFolderMap = new Map();
+        entries.forEach(e => {
+            const key = e.folderId ? String(e.folderId) : 'none';
+            byFolderMap.set(key, (byFolderMap.get(key) || 0) + 1);
+        });
+        const labels = Array.from(byFolderMap.keys()).map(k => {
+            if (k === 'none') return 'No folder';
+            const f = (state.journalFolders || []).find(ff => String(ff.id) === k);
+            return f ? f.name : 'Unknown';
+        });
+        const values = Array.from(byFolderMap.values());
+        const ctx2 = document.getElementById('journal-entries-by-folder');
+        if (ctx2) {
+            if (window.journalEntriesByFolderChart) window.journalEntriesByFolderChart.destroy();
+            window.journalEntriesByFolderChart = new Chart(ctx2, {
+                type: 'pie',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: labels.map((_, i) => `hsl(${(i * 60) % 360} 70% 55%)`)
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
     }
 
     // Function to edit a journal entry
@@ -1729,11 +1931,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Get all the necessary form elements
         const journalEntry = document.getElementById('journal-entry');
         const saveButton = document.getElementById('save-journal');
-        const journalMoods = document.querySelectorAll('.journal-mood');
+        const journalMoods = document.querySelectorAll('.mood-btn');
         const imageContainer = document.getElementById('journal-image-container');
         const imagePreview = document.getElementById('journal-image-preview');
-        const weatherDisplay = document.getElementById('weather-display');
-        const locationDisplay = document.getElementById('location-display');
+        const weatherDisplay = document.getElementById('journal-weather-display');
+        const locationDisplay = document.getElementById('journal-location-display');
         
         // Set the entry text
         journalEntry.value = entryToEdit.text;
@@ -1748,13 +1950,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Clear all selected moods
             journalMoods.forEach(moodEl => {
-                moodEl.classList.remove('selected');
+                moodEl.classList.remove('active');
             });
             
             // Find and select the correct mood
-            const moodEl = document.querySelector(`.journal-mood[data-mood="${entryToEdit.mood}"]`);
+            const moodEl = document.querySelector(`.mood-btn[data-mood="${entryToEdit.mood}"]`);
             if (moodEl) {
-                moodEl.classList.add('selected');
+                moodEl.classList.add('active');
             }
         }
         
@@ -5396,7 +5598,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add the streak system setup function
     function setupStreakSystem() {
         // DOM elements
-        const currentStreakEl = document.getElementById('current-streak');
+        // Prefer the mini streak in header; fall back to sidebar streak if present
+        const currentStreakEl = document.getElementById('current-streak') || document.getElementById('journal-day-streak');
         const longestStreakEl = document.getElementById('longest-streak');
         const nextMilestoneEl = document.getElementById('next-milestone');
         const checkInBtn = document.getElementById('check-in-btn');
@@ -5423,8 +5626,10 @@ document.addEventListener('DOMContentLoaded', () => {
         function updateStreakUI() {
             const { current, longest, milestones, lastCheckIn } = state.streaks;
             
-            // Update current streak
-            currentStreakEl.textContent = current;
+            // Update current streak in header and sidebar if available
+            if (currentStreakEl) currentStreakEl.textContent = current;
+            const sidebarStreakEl = document.getElementById('journal-day-streak');
+            if (sidebarStreakEl) sidebarStreakEl.textContent = current;
             
             // Update longest streak
             longestStreakEl.textContent = `${longest} days`;

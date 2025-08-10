@@ -2,17 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YourW0rld</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Personal Space</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="journal.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#646cff">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registered successfully:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
 </head>
 <body class="dark">
     <div class="sidebar">
-        <h2>YourW0rld</h2>
+        <h2>Pomofocus</h2>
         <nav>
             <button class="nav-button active" data-page="home">
                 <i class="fas fa-home"></i>
@@ -292,6 +309,22 @@
             
             <!-- Journal Content (will be hidden when locked) -->
             <div id="journal-content">
+                <div class="journal-subnav">
+                    <div class="journal-subnav-left">
+                        <button id="journal-tab-dashboard" class="journal-tab active" title="All entries">
+                            <i class="fas fa-th-large"></i> Dashboard
+                        </button>
+                        <button id="journal-tab-activity" class="journal-tab" title="Journal activity">
+                            <i class="fas fa-chart-bar"></i> Activity
+                        </button>
+                    </div>
+                    <div class="journal-subnav-right">
+                        <div id="folders-chip-list" class="folders-chip-list"></div>
+                        <button id="add-folder-btn" class="btn-icon" title="New Folder">
+                            <i class="fas fa-folder-plus"></i>
+                        </button>
+                    </div>
+                </div>
                 <!-- Journal Controls -->
                 <div class="journal-controls">
                     <div class="journal-search">
@@ -443,6 +476,24 @@
                     </div>
                 </div>
                 
+                <!-- Activity View (hidden by default) -->
+                <div id="journal-activity-view" style="display: none;">
+                    <div class="journal-activity-grid">
+                        <div class="journal-activity-card">
+                            <h3><i class="fas fa-chart-line"></i> Entries per Day</h3>
+                            <div class="chart-container">
+                                <canvas id="journal-entries-per-day"></canvas>
+                            </div>
+                        </div>
+                        <div class="journal-activity-card">
+                            <h3><i class="fas fa-chart-pie"></i> Entries by Folder</h3>
+                            <div class="chart-container">
+                                <canvas id="journal-entries-by-folder"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- List View (default) -->
                 <div id="journal-entries"></div>
             </div>
@@ -888,7 +939,7 @@
                         <p><strong>Personal Space</strong> - Version 1.0.0</p>
                         <p>A personal dashboard for tracking moods, journaling, and managing your timeline.</p>
                         <p>Created with ❤️ using HTML, CSS, and JavaScript.</p>
-                        <p class="copyright">© 2025 YourW0rld</p>
+                        <p class="copyright">© 2023 Personal Space</p>
                     </div>
                 </div>
             </div>
@@ -898,7 +949,7 @@
     <script src="script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script src="minimalist-goals.js"></script>
-    <script src="checkbox-fix.js"></script>
+    
     <script src="fix-clock.js"></script>
     <script src="image.js"></script>
 </body>
