@@ -1334,7 +1334,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         date: new Date().toISOString(),
                         mood: selectedMood,
                         metadata: finalMetadata,
-                        folderId: state.currentFolderFilter !== 'all' ? state.currentFolderFilter : ''
+                        folderId: state.currentFolderFilter !== 'all' ? state.currentFolderFilter : '',
+                        pinned: false
                     };
                     
                     // Try to save to storage with error handling
@@ -1626,7 +1627,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Folder filtering
         const folderFiltered = folderFilter === 'all' ? filteredEntries : filteredEntries.filter(e => String(e.folderId || '') === String(folderFilter));
 
-        folderFiltered.forEach(entry => {
+        // Sort entries: pinned first (by pinnedAt desc), then by date desc
+        const sortedEntries = [...folderFiltered].sort((a, b) => {
+            const aPinned = !!a.pinned;
+            const bPinned = !!b.pinned;
+            if (aPinned !== bPinned) return aPinned ? -1 : 1;
+            if (aPinned && bPinned) {
+                const aPinnedAt = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
+                const bPinnedAt = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
+                if (aPinnedAt !== bPinnedAt) return bPinnedAt - aPinnedAt;
+            }
+            const aDate = a.date ? new Date(a.date).getTime() : 0;
+            const bDate = b.date ? new Date(b.date).getTime() : 0;
+            return bDate - aDate;
+        });
+
+        sortedEntries.forEach(entry => {
             const entryDate = new Date(entry.date);
             const formattedDate = entryDate.toLocaleDateString('en-US', {
                 weekday: 'long',
@@ -1784,6 +1800,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${moodHTML}
                         </div>
                         <div class="journal-entry-actions">
+                            <button class="pin-btn ${entry.pinned ? 'active' : ''}" title="Pin to top" data-id="${entry.id}">
+                                <i class="fas fa-thumbtack"></i>
+                            </button>
                             <button class="edit-btn" data-id="${entry.id}">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -1835,6 +1854,23 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const entryId = parseInt(e.currentTarget.getAttribute('data-id'));
                 editJournalEntry(entryId);
+            });
+        });
+        
+        // Add event listeners to pin buttons
+        document.querySelectorAll('.pin-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const entryId = parseInt(e.currentTarget.getAttribute('data-id'));
+                const all = JSON.parse(localStorage.getItem('journalEntries') || '[]');
+                const idx = all.findIndex(en => en.id === entryId);
+                if (idx !== -1) {
+                    const currentlyPinned = !!all[idx].pinned;
+                    all[idx].pinned = !currentlyPinned;
+                    all[idx].pinnedAt = all[idx].pinned ? new Date().toISOString() : null;
+                    localStorage.setItem('journalEntries', JSON.stringify(all));
+                    renderJournalEntries();
+                    showFeedback(all[idx].pinned ? 'Entry pinned' : 'Entry unpinned');
+                }
             });
         });
         // Folder change per entry
@@ -3628,8 +3664,23 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Render filtered entries
         entriesContainer.innerHTML = '';
+
+        // Sort filtered entries: pinned first (by pinnedAt desc), then by date desc
+        const sortedFiltered = [...filteredEntries].sort((a, b) => {
+            const aPinned = !!a.pinned;
+            const bPinned = !!b.pinned;
+            if (aPinned !== bPinned) return aPinned ? -1 : 1;
+            if (aPinned && bPinned) {
+                const aPinnedAt = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
+                const bPinnedAt = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
+                if (aPinnedAt !== bPinnedAt) return bPinnedAt - aPinnedAt;
+            }
+            const aDate = a.date ? new Date(a.date).getTime() : 0;
+            const bDate = b.date ? new Date(b.date).getTime() : 0;
+            return bDate - aDate;
+        });
         
-        filteredEntries.forEach(entry => {
+        sortedFiltered.forEach(entry => {
             const entryDate = new Date(entry.date);
             const formattedDate = entryDate.toLocaleDateString('en-US', {
                 weekday: 'long',
@@ -3728,6 +3779,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${moodHTML}
                         </div>
                         <div class="journal-entry-actions">
+                            <button class="pin-btn ${entry.pinned ? 'active' : ''}" title="Pin to top" data-id="${entry.id}">
+                                <i class="fas fa-thumbtack"></i>
+                            </button>
                             <button class="edit-btn" data-id="${entry.id}">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -3775,6 +3829,23 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', (e) => {
                 const entryId = parseInt(e.currentTarget.getAttribute('data-id'));
                 editJournalEntry(entryId);
+            });
+        });
+        
+        // Add event listeners to pin buttons
+        document.querySelectorAll('.pin-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const entryId = parseInt(e.currentTarget.getAttribute('data-id'));
+                const all = JSON.parse(localStorage.getItem('journalEntries') || '[]');
+                const idx = all.findIndex(en => en.id === entryId);
+                if (idx !== -1) {
+                    const currentlyPinned = !!all[idx].pinned;
+                    all[idx].pinned = !currentlyPinned;
+                    all[idx].pinnedAt = all[idx].pinned ? new Date().toISOString() : null;
+                    localStorage.setItem('journalEntries', JSON.stringify(all));
+                    renderJournalEntries();
+                    showFeedback(all[idx].pinned ? 'Entry pinned' : 'Entry unpinned');
+                }
             });
         });
     }

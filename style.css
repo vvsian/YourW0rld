@@ -6801,6 +6801,28 @@ body.midnight .flashcard-actions .btn-primary:hover {
     align-items: center;
 }
 
+.journal-entry .pin-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    cursor: pointer;
+    padding: 5px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.journal-entry .pin-btn:hover {
+    opacity: 1;
+    color: var(--accent);
+    transform: scale(1.1);
+}
+
+.journal-entry .pin-btn.active {
+    color: var(--accent);
+    opacity: 1;
+}
+
 .journal-entry .edit-btn {
     background: none;
     border: none;
